@@ -28,24 +28,29 @@ function update(source = activePpw, showErrors = false) {
   const adjustment = adders / (size * 1000);
   let finalGross = gross;
   let finalBase = base;
+  let derived = null;
   let calculatedLabel = '';
   if (source === 'base' && validNumber(base)) {
     finalGross = base + adjustment;
+    derived = finalGross;
     calculatedLabel = 'Calculated Gross PPW';
   } else if (source === 'gross' && validNumber(gross)) {
     finalBase = gross - adjustment;
+    derived = finalBase;
     calculatedLabel = 'Calculated Base PPW';
   } else if (validNumber(gross) && !validNumber(base)) {
     finalBase = gross - adjustment;
+    derived = finalBase;
     calculatedLabel = 'Calculated Base PPW';
   } else if (validNumber(base) && !validNumber(gross)) {
     finalGross = base + adjustment;
+    derived = finalGross;
     calculatedLabel = 'Calculated Gross PPW';
   } else if (!validNumber(gross) && !validNumber(base)) {
     return clearResults('Enter either Gross PPW or Base PPW to see your proposal.');
   }
   if (!validNumber(finalGross) || !validNumber(finalBase) || finalBase < 0) return clearResults('The adders are greater than the selected Gross PPW. Increase Gross PPW or use Base PPW.');
-  render({ size, gross: finalGross, derived: source === 'base' ? finalGross : finalBase, calculatedLabel, custom, battery });
+  render({ size, gross: finalGross, derived, calculatedLabel, custom, battery });
 }
 
 function clearResults(message) {
