@@ -50,7 +50,7 @@ function update(source = activePpw, showErrors = false) {
     return clearResults('Enter either Gross PPW or Base PPW to see your proposal.');
   }
   if (!validNumber(finalGross) || !validNumber(finalBase) || finalBase < 0) return clearResults('The adders are greater than the selected Gross PPW. Increase Gross PPW or use Base PPW.');
-  render({ size, gross: finalGross, derived, calculatedLabel, custom, battery });
+  render({ size, gross: finalGross, base: finalBase, derived, calculatedLabel, custom, battery });
 }
 
 function clearResults(message) {
@@ -60,7 +60,7 @@ function clearResults(message) {
   breakdownText = '';
 }
 
-function render({ size, gross, derived, calculatedLabel, custom, battery }) {
+function render({ size, gross, base, derived, calculatedLabel, custom, battery }) {
   const name = fields.customerName.value.trim() || 'Customer';
   const program = fields.lenderProgram.value;
   const payment = number(fields.monthlyPayment);
@@ -68,7 +68,7 @@ function render({ size, gross, derived, calculatedLabel, custom, battery }) {
   const adderLines = [];
   if (custom > 0) adderLines.push(`Custom Adder: ${currency(custom)}`);
   if (battery > 0) adderLines.push(`${fields.batteryName.value.trim() || 'Battery'}: ${currency(battery)}`);
-  breakdownText = `${name}\n${ppw(gross)} PPW\n${size} kW\n\n${program}\n${currency(contract)}\n${validNumber(payment) ? currency(payment) : ''}${adderLines.length ? `\n\nAdders:\n${adderLines.join('\n')}` : ''}`.trim();
+  breakdownText = `${name}\n${ppw(base)} Base PPW\n${size} kW\n\n${program}\n${currency(contract)}\n${validNumber(payment) ? currency(payment) : ''}${adderLines.length ? `\n\nAdders:\n${adderLines.join('\n')}` : ''}`.trim();
   const safe = (value) => value.replace(/[&<>"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[char]);
   const lines = breakdownText.split('\n').map(safe);
   breakdown.innerHTML = `<div class="calculated-ppw"><span>${calculatedLabel}</span><strong>${ppw(derived)} PPW</strong></div><div class="breakdown-content"><div class="customer">${lines[0]}</div><div class="ppw">${lines[1]}</div><div>${lines[2]}</div><br><div>${lines[4]}</div><div class="amount">${lines[5]}</div><div>${lines[6] || '&nbsp;'}</div>${adderLines.length ? `<div class="adders">${lines.slice(8).join('<br>')}</div>` : ''}</div>`;
