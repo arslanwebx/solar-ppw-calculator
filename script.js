@@ -28,12 +28,24 @@ function update(source = activePpw, showErrors = false) {
   const adjustment = adders / (size * 1000);
   let finalGross = gross;
   let finalBase = base;
-  if (source === 'base' && validNumber(base)) { finalGross = base + adjustment; fields.grossPpw.value = ppw(finalGross); }
-  else if (source === 'gross' && validNumber(gross)) { finalBase = gross - adjustment; fields.basePpw.value = ppw(finalBase); }
-  else if (validNumber(gross) && !validNumber(base)) { finalBase = gross - adjustment; fields.basePpw.value = ppw(finalBase); }
-  else if (validNumber(base) && !validNumber(gross)) { finalGross = base + adjustment; fields.grossPpw.value = ppw(finalGross); }
+  let calculatedLabel = '';
+  if (source === 'base' && validNumber(base)) {
+    finalGross = base + adjustment;
+    calculatedLabel = 'Calculated Gross PPW';
+  } else if (source === 'gross' && validNumber(gross)) {
+    finalBase = gross - adjustment;
+    calculatedLabel = 'Calculated Base PPW';
+  } else if (validNumber(gross) && !validNumber(base)) {
+    finalBase = gross - adjustment;
+    calculatedLabel = 'Calculated Base PPW';
+  } else if (validNumber(base) && !validNumber(gross)) {
+    finalGross = base + adjustment;
+    calculatedLabel = 'Calculated Gross PPW';
+  } else if (!validNumber(gross) && !validNumber(base)) {
+    return clearResults('Enter either Gross PPW or Base PPW to see your proposal.');
+  }
   if (!validNumber(finalGross) || !validNumber(finalBase) || finalBase < 0) return clearResults('The adders are greater than the selected Gross PPW. Increase Gross PPW or use Base PPW.');
-  render({ size, gross: finalGross, custom, battery });
+  render({ size, gross: finalGross, derived: source === 'base' ? finalGross : finalBase, calculatedLabel, custom, battery });
 }
 
 function clearResults(message) {
@@ -43,7 +55,7 @@ function clearResults(message) {
   breakdownText = '';
 }
 
-function render({ size, gross, custom, battery }) {
+function render({ size, gross, derived, calculatedLabel, custom, battery }) {
   const name = fields.customerName.value.trim() || 'Customer';
   const program = fields.lenderProgram.value;
   const payment = number(fields.monthlyPayment);
@@ -54,7 +66,7 @@ function render({ size, gross, custom, battery }) {
   breakdownText = `${name}\n${ppw(gross)} PPW\n${size} kW\n\n${program}\n${currency(contract)}\n${validNumber(payment) ? currency(payment) : ''}${adderLines.length ? `\n\nAdders:\n${adderLines.join('\n')}` : ''}`.trim();
   const safe = (value) => value.replace(/[&<>"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[char]);
   const lines = breakdownText.split('\n').map(safe);
-  breakdown.innerHTML = `<div class="breakdown-content"><div class="customer">${lines[0]}</div><div class="ppw">${lines[1]}</div><div>${lines[2]}</div><br><div>${lines[4]}</div><div class="amount">${lines[5]}</div><div>${lines[6] || '&nbsp;'}</div>${adderLines.length ? `<div class="adders">${lines.slice(8).join('<br>')}</div>` : ''}</div>`;
+  breakdown.innerHTML = `<div class="calculated-ppw"><span>${calculatedLabel}</span><strong>${ppw(derived)} PPW</strong></div><div class="breakdown-content"><div class="customer">${lines[0]}</div><div class="ppw">${lines[1]}</div><div>${lines[2]}</div><br><div>${lines[4]}</div><div class="amount">${lines[5]}</div><div>${lines[6] || '&nbsp;'}</div>${adderLines.length ? `<div class="adders">${lines.slice(8).join('<br>')}</div>` : ''}</div>`;
   copyButton.disabled = false;
 }
 
