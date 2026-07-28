@@ -83,12 +83,12 @@ function render({ size, gross, base, derived = null, calculatedLabel = '', custo
   const adderLines = [];
   if (custom > 0) adderLines.push(`Custom Adder: ${currency(custom)}`);
   if (battery > 0) adderLines.push(`${fields.batteryName.value.trim() || 'Battery'}: ${currency(battery)}`);
-  const identityLines = [name, hasBase ? `${ppw(base)} Base PPW` : hasGross ? `${ppw(gross)} Gross PPW` : '', hasSize ? `${size} kW` : ''].filter(Boolean);
+  const identityLines = [name, hasBase ? `${ppw(base)} PPW` : hasGross ? `${ppw(gross)} PPW` : '', hasSize ? `${size} kW` : ''].filter(Boolean);
   const financeLines = [program, contract === null ? '' : currency(contract), hasPayment ? currency(payment) : ''].filter(Boolean);
   breakdownText = [identityLines.join('\n'), financeLines.join('\n'), adderLines.length ? `Adders:\n${adderLines.join('\n')}` : ''].filter(Boolean).join('\n\n');
   const safe = (value) => value.replace(/[&<>"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[char]);
   const calculated = derived === null ? '' : `<div class="calculated-ppw"><span>${safe(calculatedLabel)}</span><strong>${ppw(derived)} PPW</strong></div>`;
-  const identity = `${name ? `<div class="customer">${safe(name)}</div>` : ''}${hasBase ? `<div class="ppw">${ppw(base)} Base PPW</div>` : hasGross ? `<div class="ppw">${ppw(gross)} Gross PPW</div>` : ''}${hasSize ? `<div>${safe(String(size))} kW</div>` : ''}`;
+  const identity = `${name ? `<div class="customer">${safe(name)}</div>` : ''}${hasBase ? `<div class="ppw">${ppw(base)} PPW</div>` : hasGross ? `<div class="ppw">${ppw(gross)} PPW</div>` : ''}${hasSize ? `<div>${safe(String(size))} kW</div>` : ''}`;
   const finance = `<div class="finance">${safe(program)}${contract === null ? '' : `<div class="amount">${currency(contract)}</div>`}${hasPayment ? `<div>${currency(payment)}</div>` : ''}</div>`;
   const adders = adderLines.length ? `<div class="adders">Adders:<br>${adderLines.map(safe).join('<br>')}</div>` : '';
   breakdown.innerHTML = `${calculated}<div class="breakdown-content">${identity}${finance}${adders}</div>`;
