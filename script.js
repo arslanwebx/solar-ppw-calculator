@@ -23,7 +23,10 @@ function update(source = activePpw, showErrors = false) {
   validation.textContent = '';
   copyStatus.textContent = '';
   if (invalid) return clearResults('Use zero or a positive number for all amount fields.');
-  if (!size || size <= 0) return clearResults(showErrors ? 'Enter a system size greater than zero.' : 'Add a system size and either Gross PPW or Base PPW to see your proposal.');
+  if (!size || size <= 0) {
+    if (showErrors) validation.textContent = 'Enter a system size greater than zero to calculate PPW and the contract total.';
+    return render({ size, gross, base, custom, battery });
+  }
   const adders = custom + battery;
   const adjustment = adders / (size * 1000);
   let finalGross = gross;
@@ -47,7 +50,8 @@ function update(source = activePpw, showErrors = false) {
     derived = finalGross;
     calculatedLabel = 'Calculated Gross PPW';
   } else if (!validNumber(gross) && !validNumber(base)) {
-    return clearResults('Enter either Gross PPW or Base PPW to see your proposal.');
+    if (showErrors) validation.textContent = 'Enter either Gross PPW or Base PPW to calculate the proposal total.';
+    return render({ size, gross, base, custom, battery });
   }
   if (!validNumber(finalGross) || !validNumber(finalBase) || finalBase < 0) return clearResults('The adders are greater than the selected Gross PPW. Increase Gross PPW or use Base PPW.');
   render({ size, gross: finalGross, base: finalBase, derived, calculatedLabel, custom, battery });
@@ -60,18 +64,34 @@ function clearResults(message) {
   breakdownText = '';
 }
 
-function render({ size, gross, base, derived, calculatedLabel, custom, battery }) {
-  const name = fields.customerName.value.trim() || 'Customer';
+function render({ size, gross, base, derived = null, calculatedLabel = '', custom, battery }) {
+  const name = fields.customerName.value.trim();
   const program = fields.lenderProgram.value;
   const payment = number(fields.monthlyPayment);
-  const contract = gross * size * 1000;
+  const hasSize = validNumber(size) && size > 0;
+  const hasGross = validNumber(gross);
+  const hasBase = validNumber(base);
+  const hasPayment = validNumber(payment);
+  const hasDetails = Boolean(name) || hasSize || hasGross || hasBase || custom > 0 || battery > 0 || hasPayment;
+  if (!hasDetails) {
+    breakdown.innerHTML = '<p class="empty-state">Start entering proposal details to build your breakdown.</p>';
+    copyButton.disabled = true;
+    breakdownText = '';
+    return;
+  }
+  const contract = hasSize && hasGross ? gross * size * 1000 : null;
   const adderLines = [];
   if (custom > 0) adderLines.push(`Custom Adder: ${currency(custom)}`);
   if (battery > 0) adderLines.push(`${fields.batteryName.value.trim() || 'Battery'}: ${currency(battery)}`);
-  breakdownText = `${name}\n${ppw(base)} Base PPW\n${size} kW\n\n${program}\n${currency(contract)}\n${validNumber(payment) ? currency(payment) : ''}${adderLines.length ? `\n\nAdders:\n${adderLines.join('\n')}` : ''}`.trim();
+  const identityLines = [name, hasBase ? `${ppw(base)} Base PPW` : hasGross ? `${ppw(gross)} Gross PPW` : '', hasSize ? `${size} kW` : ''].filter(Boolean);
+  const financeLines = [program, contract === null ? '' : currency(contract), hasPayment ? currency(payment) : ''].filter(Boolean);
+  breakdownText = [identityLines.join('\n'), financeLines.join('\n'), adderLines.length ? `Adders:\n${adderLines.join('\n')}` : ''].filter(Boolean).join('\n\n');
   const safe = (value) => value.replace(/[&<>"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[char]);
-  const lines = breakdownText.split('\n').map(safe);
-  breakdown.innerHTML = `<div class="calculated-ppw"><span>${calculatedLabel}</span><strong>${ppw(derived)} PPW</strong></div><div class="breakdown-content"><div class="customer">${lines[0]}</div><div class="ppw">${lines[1]}</div><div>${lines[2]}</div><br><div>${lines[4]}</div><div class="amount">${lines[5]}</div><div>${lines[6] || '&nbsp;'}</div>${adderLines.length ? `<div class="adders">${lines.slice(8).join('<br>')}</div>` : ''}</div>`;
+  const calculated = derived === null ? '' : `<div class="calculated-ppw"><span>${safe(calculatedLabel)}</span><strong>${ppw(derived)} PPW</strong></div>`;
+  const identity = `${name ? `<div class="customer">${safe(name)}</div>` : ''}${hasBase ? `<div class="ppw">${ppw(base)} Base PPW</div>` : hasGross ? `<div class="ppw">${ppw(gross)} Gross PPW</div>` : ''}${hasSize ? `<div>${safe(String(size))} kW</div>` : ''}`;
+  const finance = `<div class="finance">${safe(program)}${contract === null ? '' : `<div class="amount">${currency(contract)}</div>`}${hasPayment ? `<div>${currency(payment)}</div>` : ''}</div>`;
+  const adders = adderLines.length ? `<div class="adders">Adders:<br>${adderLines.map(safe).join('<br>')}</div>` : '';
+  breakdown.innerHTML = `${calculated}<div class="breakdown-content">${identity}${finance}${adders}</div>`;
   copyButton.disabled = false;
 }
 
