@@ -100,3 +100,37 @@ function render({ size, gross, base, derived = null, calculatedLabel = '', custo
 form.addEventListener('submit', (event) => { event.preventDefault(); update(activePpw, true); });
 form.addEventListener('reset', () => setTimeout(() => { activePpw = null; copyStatus.textContent = ''; clearResults('Add a system size and either Gross PPW or Base PPW to see your proposal.'); }, 0));
 copyButton.addEventListener('click', async () => { try { await navigator.clipboard.writeText(breakdownText); copyStatus.textContent = 'Breakdown copied to clipboard.'; } catch { copyStatus.textContent = 'Copy failed. Please select and copy the breakdown manually.'; } });
+
+const quickPpwForm = $('quickPpwForm');
+const quickLoanAmount = $('quickLoanAmount');
+const quickSystemSize = $('quickSystemSize');
+const quickSystemUnit = $('quickSystemUnit');
+const quickPpwResult = $('quickPpwResult');
+const quickPpwMessage = $('quickPpwMessage');
+
+function calculateQuickPpw(showError = false) {
+  const loanAmount = number(quickLoanAmount);
+  const systemSize = number(quickSystemSize);
+  if (loanAmount === null || systemSize === null) {
+    quickPpwResult.textContent = '—';
+    quickPpwMessage.textContent = showError ? 'Enter both the loan amount and system size.' : 'Add your loan amount and system size.';
+    return;
+  }
+  if (!validNumber(loanAmount) || !validNumber(systemSize) || systemSize <= 0) {
+    quickPpwResult.textContent = '—';
+    quickPpwMessage.textContent = 'Use a positive system size and a zero or positive loan amount.';
+    return;
+  }
+  const watts = quickSystemUnit.value === 'kw' ? systemSize * 1000 : systemSize;
+  quickPpwResult.textContent = `${ppw(loanAmount / watts)} PPW`;
+  quickPpwMessage.textContent = `${currency(loanAmount)} ÷ ${new Intl.NumberFormat('en-US').format(watts)} watts`;
+}
+
+[quickLoanAmount, quickSystemSize, quickSystemUnit].forEach((input) => input.addEventListener('input', () => calculateQuickPpw()));
+quickSystemUnit.addEventListener('change', () => calculateQuickPpw());
+quickPpwForm.addEventListener('submit', (event) => { event.preventDefault(); calculateQuickPpw(true); });
+$('quickPpwReset').addEventListener('click', () => {
+  quickPpwForm.reset();
+  calculateQuickPpw();
+  quickLoanAmount.focus();
+});
